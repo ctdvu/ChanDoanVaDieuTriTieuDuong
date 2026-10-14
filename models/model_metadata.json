@@ -1,0 +1,125 @@
+{
+  "project": "Diabetes Diagnosis with ML & RAG",
+  "created_at": "2026-10-14T23:53:32.319447",
+  "random_seed": 42,
+  "datasets": {
+    "train": {
+      "path": "D:\\N4_K1\\HTTM\\Code\\TieuLuan\\KB_RAG\\data\\diabetes_binary_5050split_health_indicators_BRFSS2015.csv",
+      "rows": 69057,
+      "features": 21
+    },
+    "test": {
+      "path": "D:\\N4_K1\\HTTM\\Code\\TieuLuan\\KB_RAG\\data\\diabetes_binary_health_indicators_BRFSS2015.csv",
+      "rows": 253680,
+      "features": 21
+    }
+  },
+  "preprocessing": {
+    "scaled_features": [
+      "BMI",
+      "MentHlth",
+      "PhysHlth",
+      "Age"
+    ],
+    "scaler": "StandardScaler",
+    "val_split": 0.2,
+    "stratified": true
+  },
+  "best_model": {
+    "name": "Gradient Boosting",
+    "type": "GradientBoostingClassifier",
+    "params": "{'ccp_alpha': 0.0, 'criterion': 'deprecated', 'init': None, 'learning_rate': 0.1, 'loss': 'log_loss', 'max_depth': 3, 'max_features': None, 'max_leaf_nodes': None, 'min_impurity_decrease': 0.0, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 100, 'n_iter_no_change': None, 'random_state': 42, 'subsample': 1.0, 'tol': 0.0001, 'validation_fraction': 0.1, 'verbose': 0, 'warm_start': False}",
+    "val_accuracy": 0.75,
+    "val_f1": 0.7646,
+    "val_auc": 0.8237,
+    "test_accuracy": 0.7211,
+    "test_f1": 0.4437,
+    "test_auc": 0.8311
+  },
+  "all_models_val": [
+    {
+      "Model": "Gradient Boosting",
+      "Val_Accuracy": 0.75,
+      "Val_F1": 0.7646,
+      "Val_AUC": 0.8237
+    },
+    {
+      "Model": "LightGBM",
+      "Val_Accuracy": 0.7493,
+      "Val_F1": 0.7641,
+      "Val_AUC": 0.8234
+    },
+    {
+      "Model": "AdaBoost",
+      "Val_Accuracy": 0.7467,
+      "Val_F1": 0.7592,
+      "Val_AUC": 0.8194
+    },
+    {
+      "Model": "Random Forest",
+      "Val_Accuracy": 0.7428,
+      "Val_F1": 0.7584,
+      "Val_AUC": 0.8181
+    },
+    {
+      "Model": "XGBoost",
+      "Val_Accuracy": 0.742,
+      "Val_F1": 0.7562,
+      "Val_AUC": 0.8174
+    },
+    {
+      "Model": "Logistic Regression",
+      "Val_Accuracy": 0.7446,
+      "Val_F1": 0.7546,
+      "Val_AUC": 0.8174
+    },
+    {
+      "Model": "Decision Tree",
+      "Val_Accuracy": 0.7316,
+      "Val_F1": 0.7465,
+      "Val_AUC": 0.7927
+    },
+    {
+      "Model": "Naive Bayes",
+      "Val_Accuracy": 0.7186,
+      "Val_F1": 0.7217,
+      "Val_AUC": 0.78
+    },
+    {
+      "Model": "KNN",
+      "Val_Accuracy": 0.7047,
+      "Val_F1": 0.7171,
+      "Val_AUC": 0.7669
+    }
+  ],
+  "features": [
+    "HighBP",
+    "HighChol",
+    "CholCheck",
+    "BMI",
+    "Smoker",
+    "Stroke",
+    "HeartDiseaseorAttack",
+    "PhysActivity",
+    "Fruits",
+    "Veggies",
+    "HvyAlcoholConsump",
+    "AnyHealthcare",
+    "NoDocbcCost",
+    "GenHlth",
+    "MentHlth",
+    "PhysHlth",
+    "DiffWalk",
+    "Sex",
+    "Age",
+    "Education",
+    "Income"
+  ],
+  "target": "Diabetes_binary",
+  "rag": {
+    "pdf_source": "HD-chan-doan-dieu-tri-DTD-2017_07_19-Approved.pdf",
+    "n_chunks": 42,
+    "embedding_model": "paraphrase-multilingual-MiniLM-L12-v2",
+    "vector_db": "ChromaDB"
+  }
+}

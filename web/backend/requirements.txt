@@ -1,0 +1,34 @@
+# Data & ML
+pandas>=2.0
+numpy>=1.24
+scikit-learn>=1.3
+xgboost>=2.0
+lightgbm>=4.0
+joblib>=1.3
+
+# Visualization
+matplotlib>=3.7
+seaborn>=0.13
+plotly>=5.18
+
+# Jupyter
+jupyter>=1.0
+ipywidgets>=8.1
+
+# RAG
+langchain>=0.2
+langchain-community>=0.2
+chromadb>=0.4
+sentence-transformers>=2.6
+PyMuPDF>=1.24
+pdfplumber>=0.11
+
+# Web Backend
+fastapi>=0.111
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pydantic>=2.7
+
+# Optional LLM
+# openai>=1.30
+# ollama>=0.2

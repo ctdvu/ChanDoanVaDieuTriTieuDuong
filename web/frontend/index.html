@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2563eb" />
+    <title>🩺 Chẩn Đoán Tiểu Đường</title>
+    <link rel="manifest" href="/static/manifest.json" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- ── HEADER ─────────────────────────────────────────────── -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="logo">
+                <span class="logo-icon">🩺</span>
+                <div>
+                    <h1>Chẩn Đoán Tiểu Đường</h1>
+                    <p class="subtitle">Hệ thống ML + RAG phác đồ điều trị</p>
+                </div>
+            </div>
+            <div class="header-status" id="serverStatus">
+                <span class="dot dot-gray"></span> Đang kết nối...
+            </div>
+        </div>
+    </header>
+
+    <!-- ── DISCLAIMER ─────────────────────────────────────────── -->
+    <div class="disclaimer">
+        ⚕️ <strong>Lưu ý:</strong> Đây là công cụ hỗ trợ tham khảo, <strong>KHÔNG</strong> thay thế chẩn đoán của bác sĩ. Hãy tham khảo ý kiến chuyên gia y tế.
+    </div>
+
+    <!-- ── NAVIGATION TABS ────────────────────────────────────── -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="diagnose">🔍 Chẩn Đoán</button>
+        <button class="tab-btn" data-tab="result">📊 Kết Quả</button>
+        <button class="tab-btn" data-tab="treatment">💊 Phác Đồ</button>
+        <button class="tab-btn" data-tab="history">🕐 Lịch Sử</button>
+    </nav>
+
+    <!-- ── MAIN CONTENT ───────────────────────────────────────── -->
+    <main class="main-content">
+
+        <!-- TAB: DIAGNOSE ──────────────────────────────────────── -->
+        <section class="tab-panel active" id="tab-diagnose">
+            <div class="section-header">
+                <h2>📋 Nhập Thông Tin Bệnh Nhân</h2>
+                <p>Điền đầy đủ các thông tin để nhận kết quả chẩn đoán</p>
+            </div>
+
+            <form id="diagnosisForm" class="form-grid">
+                <!-- Row: Vital Signs -->
+                <div class="form-section">
+                    <h3>🏥 Chỉ Số Sức Khỏe</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="BMI">BMI <span class="badge" id="bmiValue">25.0</span></label>
+                            <input type="range" id="BMI" name="BMI" min="10" max="60" step="0.5" value="25" class="slider" />
+                            <div class="slider-labels"><span>10</span><span>60</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="GenHlth">Sức khỏe tổng quát <span class="badge" id="genHlthLabel">Tốt</span></label>
+                            <input type="range" id="GenHlth" name="GenHlth" min="1" max="5" step="1" value="2" class="slider" />
+                            <div class="slider-labels"><span>Tuyệt vời</span><span>Kém</span></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="Age">Nhóm tuổi <span class="badge" id="ageLabel">25–29</span></label>
+                            <input type="range" id="Age" name="Age" min="1" max="13" step="1" value="3" class="slider" />
+                            <div class="slider-labels"><span>18–24</span><span>80+</span></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="MentHlth">Ngày sức khỏe tâm thần kém <span class="badge" id="mentHlthValue">0</span>/30</label>
+                            <input type="range" id="MentHlth" name="MentHlth" min="0" max="30" step="1" value="0" class="slider" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="PhysHlth">Ngày sức khỏe thể chất kém <span class="badge" id="physHlthValue">0</span>/30</label>
+                            <input type="range" id="PhysHlth" name="PhysHlth" min="0" max="30" step="1" value="0" class="slider" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Income">Thu nhập <span class="badge" id="incomeLabel">Nhóm 4</span></label>
+                            <input type="range" id="Income" name="Income" min="1" max="8" step="1" value="4" class="slider" />
+                            <div class="slider-labels"><span>&lt;\$10K</span><span>≥\$75K</span></div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="Education">Học vấn <span class="badge" id="eduLabel">Trung cấp/CĐ</span></label>
+                            <input type="range" id="Education" name="Education" min="1" max="6" step="1" value="4" class="slider" />
+                            <div class="slider-labels"><span>Tiểu học</span><span>ĐH/SĐH</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row: Binary Toggles -->
+                <div class="form-section">
+                    <h3>⚕️ Tình Trạng Sức Khỏe</h3>
+                    <div class="toggle-grid">
+                        <label class="toggle-item">
+                            <input type="checkbox" name="HighBP" id="HighBP" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🔴 Huyết áp cao</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="HighChol" id="HighChol" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🧈 Cholesterol cao</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="CholCheck" id="CholCheck" checked />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🧪 KT Cholesterol 5 năm qua</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="Stroke" id="Stroke" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🧠 Đột quỵ</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="HeartDiseaseorAttack" id="HeartDiseaseorAttack" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">❤️ Bệnh tim / Đau tim</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="DiffWalk" id="DiffWalk" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🦽 Khó đi lại</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>🌿 Lối Sống</h3>
+                    <div class="toggle-grid">
+                        <label class="toggle-item">
+                            <input type="checkbox" name="Smoker" id="Smoker" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🚬 Hút thuốc lá</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="HvyAlcoholConsump" id="HvyAlcoholConsump" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🍷 Uống rượu nhiều</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="PhysActivity" id="PhysActivity" checked />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🏃 Hoạt động thể chất</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="Fruits" id="Fruits" checked />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🍎 Ăn trái cây hàng ngày</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="Veggies" id="Veggies" checked />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🥦 Ăn rau xanh hàng ngày</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>📋 Thông Tin Khác</h3>
+                    <div class="toggle-grid">
+                        <label class="toggle-item">
+                            <input type="checkbox" name="AnyHealthcare" id="AnyHealthcare" checked />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">🏥 Có bảo hiểm y tế</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="NoDocbcCost" id="NoDocbcCost" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">💸 Không khám được vì chi phí</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" name="Sex" id="Sex" />
+                            <span class="toggle-switch"></span>
+                            <span class="toggle-label">♂ Giới tính Nam</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                        🔍 Chẩn Đoán Ngay
+                    </button>
+                    <button type="reset" class="btn btn-secondary" id="resetBtn">
+                        🔄 Nhập Lại
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- TAB: RESULT ─────────────────────────────────────────── -->
+        <section class="tab-panel" id="tab-result">
+            <div class="section-header">
+                <h2>📊 Kết Quả Chẩn Đoán</h2>
+            </div>
+
+            <div id="resultContainer" class="result-container hidden">
+                <!-- Risk Badge -->
+                <div class="risk-card" id="riskCard">
+                    <div class="risk-icon" id="riskIcon">❓</div>
+                    <div class="risk-info">
+                        <h3 id="riskTitle">--</h3>
+                        <p id="riskMessage">--</p>
+                    </div>
+                    <div class="risk-badge" id="riskBadge">--</div>
+                </div>
+
+                <!-- Gauge Chart -->
+                <div class="chart-card">
+                    <h3>Xác suất Tiểu đường</h3>
+                    <div class="gauge-container">
+                        <canvas id="gaugeChart" width="300" height="180"></canvas>
+                        <div class="gauge-value" id="gaugeValue">0%</div>
+                    </div>
+                </div>
+
+                <!-- Radar Chart -->
+                <div class="chart-card">
+                    <h3>Hồ Sơ Nguy Cơ Bệnh Nhân</h3>
+                    <canvas id="radarChart" height="280"></canvas>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="result-actions">
+                    <button class="btn btn-primary" id="getRecommendBtn">
+                        💊 Xem Phác Đồ Điều Trị
+                    </button>
+                    <button class="btn btn-secondary" id="saveResultBtn">
+                        💾 Lưu Kết Quả
+                    </button>
+                </div>
+            </div>
+
+            <div id="resultEmpty" class="empty-state">
+                <div class="empty-icon">🔍</div>
+                <p>Chưa có kết quả. Hãy nhập thông tin và bấm <strong>Chẩn Đoán Ngay</strong>.</p>
+            </div>
+        </section>
+
+        <!-- TAB: TREATMENT ──────────────────────────────────────── -->
+        <section class="tab-panel" id="tab-treatment">
+            <div class="section-header">
+                <h2>💊 Phác Đồ Điều Trị</h2>
+                <p>Gợi ý từ hướng dẫn chẩn đoán và điều trị đái tháo đường</p>
+            </div>
+
+            <div id="treatmentContainer" class="treatment-container hidden">
+                <!-- Treatment Plan -->
+                <div class="accordion" id="treatmentAccordion">
+                    <div class="accordion-item open">
+                        <div class="accordion-header" data-target="planBody">
+                            <span>📋 Phác Đồ Điều Trị</span>
+                            <span class="accordion-arrow">▼</span>
+                        </div>
+                        <div class="accordion-body" id="planBody">
+                            <div id="treatmentPlan" class="treatment-content"></div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <div class="accordion-header" data-target="lifestyleBody">
+                            <span>🌿 Thay Đổi Lối Sống</span>
+                            <span class="accordion-arrow">▶</span>
+                        </div>
+                        <div class="accordion-body collapsed" id="lifestyleBody">
+                            <div id="lifestyleTips" class="treatment-content"></div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" id="sourcesItem">
+                        <div class="accordion-header" data-target="sourcesBody">
+                            <span>📚 Nguồn Tham Khảo</span>
+                            <span class="accordion-arrow">▶</span>
+                        </div>
+                        <div class="accordion-body collapsed" id="sourcesBody">
+                            <div id="sources" class="treatment-content"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rag-badge" id="ragBadge"></div>
+            </div>
+
+            <div id="treatmentEmpty" class="empty-state">
+                <div class="empty-icon">💊</div>
+                <p>Hãy chẩn đoán trước, sau đó bấm <strong>Xem Phác Đồ Điều Trị</strong>.</p>
+            </div>
+        </section>
+
+        <!-- TAB: HISTORY ────────────────────────────────────────── -->
+        <section class="tab-panel" id="tab-history">
+            <div class="section-header">
+                <h2>🕐 Lịch Sử Chẩn Đoán</h2>
+                <button class="btn btn-danger btn-sm" id="clearHistoryBtn">🗑️ Xóa lịch sử</button>
+            </div>
+            <div id="historyList" class="history-list"></div>
+            <div id="historyEmpty" class="empty-state">
+                <div class="empty-icon">📋</div>
+                <p>Chưa có lịch sử chẩn đoán.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── LOADING OVERLAY ───────────────────────────────────── -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">Đang phân tích...</p>
+    </div>
+
+    <!-- ── TOAST ─────────────────────────────────────────────── -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
