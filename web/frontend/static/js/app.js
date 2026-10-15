@@ -163,20 +163,22 @@ async function runDiagnosis() {
             body: JSON.stringify(formData),
         });
 
+        const rawText = await res.text();
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch {
+            data = null;
+        }
+
         if (!res.ok) {
-            let errMsg = `HTTP ${res.status}`;
-            try {
-                const err = await res.json();
-                errMsg = err.detail || errMsg;
-            } catch {
-                const text = await res.text().catch(() => '');
-                errMsg = text.substring(0, 200) || errMsg;
-            }
+            const errMsg = (data && data.detail) ? data.detail : (rawText.substring(0, 200) || `HTTP ${res.status}`);
             throw new Error(errMsg);
         }
 
-        const result = await res.json();
+        const result = data || {};
         currentResult = { ...result, patient_features: formData, timestamp: new Date().toISOString() };
+
 
         hideLoading();
         renderResult(currentResult);
@@ -365,16 +367,17 @@ async function getRecommendation() {
             body: JSON.stringify(payload),
         });
 
+        const rawText = await res.text();
+        let data;
+        try { data = JSON.parse(rawText); } catch { data = null; }
+
         if (!res.ok) {
-            let errMsg = `HTTP ${res.status}`;
-            try { const e = await res.json(); errMsg = e.detail || errMsg; }
-            catch { const t = await res.text().catch(() => ''); errMsg = t.substring(0, 200) || errMsg; }
+            const errMsg = (data && data.detail) ? data.detail : (rawText.substring(0, 200) || `HTTP ${res.status}`);
             throw new Error(errMsg);
         }
 
-        const data = await res.json();
         hideLoading();
-        renderTreatment(data);
+        renderTreatment(data || {});
         switchTab('treatment');
 
     } catch (err) {
