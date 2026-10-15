@@ -60,7 +60,16 @@ _rag = None
 try:
     from rag_pipeline import get_rag_pipeline
     _rag = get_rag_pipeline()
-    logger.info(f"✅ RAG pipeline ready. Index có {_rag.collection.count() if _rag.is_ready() else 0} docs")
+    if _rag.is_ready():
+        logger.info(f"✅ RAG pipeline ready. Index có {_rag.collection.count()} docs")
+    else:
+        pdf_path = Path(__file__).parent.parent.parent / "data" / "HD-chan-doan-dieu-tri-DTD-2017_07_19-Approved.pdf"
+        if pdf_path.exists():
+            logger.info(f"🔨 Đang tự động build RAG index từ: {pdf_path.name}...")
+            _rag.build_index(str(pdf_path))
+            logger.info(f"✅ RAG pipeline ready. Index có {_rag.collection.count()} docs")
+        else:
+            logger.warning(f"⚠️ RAG index đang trống và không tìm thấy file PDF tại: {pdf_path}")
 except Exception as e:
     logger.warning(f"⚠️ RAG pipeline không khởi động được: {e}")
 
@@ -80,6 +89,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"❌ Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    logger.error(f"❌ Validation error: {exc}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": str(exc)},
+    )
+
 # Serve frontend static files
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 if FRONTEND_DIR.exists():
@@ -93,6 +121,11 @@ FEATURE_NAMES = [
     "HvyAlcoholConsump", "AnyHealthcare", "NoDocbcCost", "GenHlth",
     "MentHlth", "PhysHlth", "DiffWalk", "Sex", "Age", "Education", "Income"
 ]
+
+# Các thuộc tính số liên tục được chuẩn hóa bằng StandardScaler trong pipeline huấn luyện
+SCALED_FEATURES = ["BMI", "MentHlth", "PhysHlth", "Age"]
+SCALED_INDICES = [FEATURE_NAMES.index(f) for f in SCALED_FEATURES]
+
 
 
 class PredictRequest(BaseModel):
@@ -141,7 +174,7 @@ class RecommendResponse(BaseModel):
 
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     """Serve frontend."""
     index_file = FRONTEND_DIR / "index.html"
@@ -150,14 +183,15 @@ async def root():
     return {"message": "🩺 Diabetes Diagnosis API", "docs": "/docs"}
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health():
     """Health check endpoint."""
+    model_name = _metadata.get("best_model", {}).get("name") or _metadata.get("model_name", "Gradient Boosting")
     return {
         "status": "ok",
         "model_loaded": _model is not None,
         "rag_ready": _rag is not None and _rag.is_ready(),
-        "model_info": _metadata.get("model_name", "N/A"),
+        "model_info": model_name,
     }
 
 
@@ -172,10 +206,16 @@ async def predict(data: PredictRequest):
 
     # Chuẩn bị features theo đúng thứ tự
     features = [getattr(data, name) for name in FEATURE_NAMES]
-    X = np.array(features).reshape(1, -1)
+    X = np.array(features, dtype=float).reshape(1, -1)
 
-    # Scale
-    X_scaled = _scaler.transform(X)
+    # Scale các đặc trưng số theo đúng pipeline lúc huấn luyện (BMI, MentHlth, PhysHlth, Age)
+    X_scaled = X.copy()
+    if getattr(_scaler, "n_features_in_", None) == len(SCALED_INDICES):
+        X_scaled[:, SCALED_INDICES] = _scaler.transform(X[:, SCALED_INDICES])
+    elif getattr(_scaler, "n_features_in_", None) == len(FEATURE_NAMES):
+        X_scaled = _scaler.transform(X)
+    else:
+        X_scaled[:, SCALED_INDICES] = _scaler.transform(X[:, SCALED_INDICES])
 
     # Predict
     prediction = int(_model.predict(X_scaled)[0])
@@ -198,6 +238,37 @@ async def predict(data: PredictRequest):
         risk_level=risk_level,
         message=message,
     )
+
+
+
+@app.post("/api/build-index")
+async def build_index():
+    """Build RAG vector index từ PDF (chạy 1 lần sau khi deploy)."""
+    if _rag is None:
+        raise HTTPException(status_code=503, detail="RAG pipeline chưa khởi động được.")
+
+    PDF_PATH = Path(__file__).parent.parent.parent / "data" / "HD-chan-doan-dieu-tri-DTD-2017_07_19-Approved.pdf"
+    if not PDF_PATH.exists():
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy file PDF: {PDF_PATH}")
+
+    try:
+        logger.info(f"🔨 Bắt đầu build RAG index từ: {PDF_PATH}")
+        _rag.build_index(str(PDF_PATH))
+        count = _rag.collection.count()
+        logger.info(f"✅ Build index xong: {count} chunks")
+        return {"status": "ok", "message": f"Build index thành công! {count} chunks.", "count": count}
+    except Exception as e:
+        logger.error(f"❌ Lỗi build index: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/build-index")
+async def build_index_status():
+    """Kiểm tra trạng thái RAG index."""
+    if _rag is None:
+        return {"rag_ready": False, "count": 0, "message": "RAG pipeline chưa khởi động"}
+    count = _rag.collection.count() if _rag.collection else 0
+    return {"rag_ready": _rag.is_ready(), "count": count, "message": f"Index có {count} documents"}
 
 
 @app.post("/api/recommend", response_model=RecommendResponse)

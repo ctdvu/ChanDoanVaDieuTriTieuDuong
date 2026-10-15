@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   diabetes-app:
     build: .
@@ -13,7 +11,8 @@ services:
       - PYTHONPATH=/app
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s

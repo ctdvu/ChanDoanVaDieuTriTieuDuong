@@ -164,8 +164,15 @@ async function runDiagnosis() {
         });
 
         if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || `HTTP ${res.status}`);
+            let errMsg = `HTTP ${res.status}`;
+            try {
+                const err = await res.json();
+                errMsg = err.detail || errMsg;
+            } catch {
+                const text = await res.text().catch(() => '');
+                errMsg = text.substring(0, 200) || errMsg;
+            }
+            throw new Error(errMsg);
         }
 
         const result = await res.json();
@@ -358,7 +365,12 @@ async function getRecommendation() {
             body: JSON.stringify(payload),
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            let errMsg = `HTTP ${res.status}`;
+            try { const e = await res.json(); errMsg = e.detail || errMsg; }
+            catch { const t = await res.text().catch(() => ''); errMsg = t.substring(0, 200) || errMsg; }
+            throw new Error(errMsg);
+        }
 
         const data = await res.json();
         hideLoading();
