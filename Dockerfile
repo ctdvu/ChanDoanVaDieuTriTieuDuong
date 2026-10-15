@@ -8,15 +8,15 @@ RUN apt-get update && apt-get install -y \
     gcc g++ libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Install PyTorch CPU-only (saves ~5-10GB of unused CUDA packages)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
+# Copy requirements & install backend dependencies
 COPY web/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
 COPY . .
-
-# Pre-download embedding model (optional, speeds up startup)
-# RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')"
 
 EXPOSE 8000
 
